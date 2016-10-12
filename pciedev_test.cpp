@@ -95,6 +95,8 @@ int main(int argc, char* argv[])
 		printf("\n GET SLOT NUM (4) or GET_STATUS (5) ?-");
 		printf("\n SET_BITS (6) or SWAP_BITS(7)  VECTOR_READ (8)?-");
 		
+		printf("For testing!!! Do not use it Read Open/Close (9)");
+		
 		printf("\n SET_SCRATC_REG (12) or GET_SRATCH_REG(13) or READ_SCRATCH_REG (14) ?-");
 		
 		printf("\n GET SWAP (15) or  SET_SWAP (16)  ?-");
