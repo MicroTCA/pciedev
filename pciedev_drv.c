@@ -4,6 +4,7 @@
 #include <linux/sched.h>
 #include <linux/types.h>
 #include <linux/timer.h>
+#include <linux/mm.h>
 
 #include "pciedev_fnc.h"
 
@@ -20,15 +21,17 @@ static int        pciedev_open( struct inode *inode, struct file *filp );
 static int        pciedev_release(struct inode *inode, struct file *filp);
 static ssize_t pciedev_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
 static ssize_t pciedev_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos);
-static long     pciedev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+static long    pciedev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+static int      pciedev_remap_mmap(struct file *filp, struct vm_area_struct *vma);
 
 struct file_operations pciedev_fops = {
-    .owner                   =  THIS_MODULE,
-    .read                     =  pciedev_read,
-    .write                    =  pciedev_write,
-    .unlocked_ioctl     =  pciedev_ioctl,
-    .open                    =  pciedev_open,
-    .release                =  pciedev_release,
+	.owner                   =  THIS_MODULE,
+	.read                     =  pciedev_read,
+	.write                    =  pciedev_write,
+	.unlocked_ioctl     =  pciedev_ioctl,
+	.open                    =  pciedev_open,
+	.release                =  pciedev_release,
+	.mmap                 = pciedev_remap_mmap,
 };
 
 static struct pci_device_id pciedev_ids[]  = {
@@ -130,6 +133,7 @@ static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
 static int pciedev_open( struct inode *inode, struct file *filp )
 {
     int    result = 0;
+    printk(KERN_ALERT "PCIEDEV_OPEN CALLED\n");
     result = pciedev_open_exp( inode, filp );
     return result;
 }
@@ -137,6 +141,7 @@ static int pciedev_open( struct inode *inode, struct file *filp )
 static int pciedev_release(struct inode *inode, struct file *filp)
 {
     int result            = 0;
+    printk(KERN_ALERT "PCIEDEV_CLOSE CALLED\n");
     result = pciedev_release_exp(inode, filp);
     return result;
 } 
@@ -153,6 +158,15 @@ static ssize_t pciedev_write(struct file *filp, const char __user *buf, size_t c
     ssize_t         retval = 0;
     retval = pciedev_write_exp(filp, buf, count, f_pos);
     return retval;
+}
+
+static int pciedev_remap_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	ssize_t         retval = 0;
+	printk(KERN_ALERT "PCIEDEV_MMAP CALLED\n");
+	retval =pciedev_remap_mmap_exp(filp, vma);
+	printk(KERN_ALERT "PCIEDEV_MMAP_EXP CALLED\n");
+	return 0;
 }
 
 static long  pciedev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)

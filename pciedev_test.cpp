@@ -11,6 +11,8 @@
 #include <setjmp.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <limits.h>
 
 #include <iostream>
 #include <fstream>
@@ -62,6 +64,11 @@ int main(int argc, char* argv[])
 	u_int*                        tmp_vrw_buf[6];
 	device_ioc_rw            vrw_ioc_ACCESS[6];
 	int                             vrw_count;
+	
+	//mmap
+	void               *mmap_address ;
+	unsigned long mmap_offset    = 0; 
+	unsigned long mmap_len        = 0;
 
 	itemsize = sizeof(device_rw);
 	printf("ITEMSIZE %i \n",itemsize);
@@ -95,8 +102,8 @@ int main(int argc, char* argv[])
 		printf("\n GET SLOT NUM (4) or GET_STATUS (5) ?-");
 		printf("\n SET_BITS (6) or SWAP_BITS(7)  VECTOR_READ (8)?-");
 		
-		printf("For testing!!! Do not use it Read Open/Close (9)");
-		printf("For testing!!! Do not use it mmap (10)");
+		printf("\nFor testing!!! Do not use it Read Open/Close (9)");
+		printf("\nFor testing!!! Do not use it mmap (10)");
 		
 		printf("\n SET_SCRATC_REG (12) or GET_SRATCH_REG(13) or READ_SCRATCH_REG (14) ?-");
 		
@@ -371,7 +378,6 @@ int main(int argc, char* argv[])
 						*(int*)((char*)ctmp_rw_buf + i* sizeof (device_ioc_rw) +8),	
 						*(int*)((char*)ctmp_rw_buf + i* sizeof (device_ioc_rw) +12)
 							);
-					;
 				}
 				gettimeofday(&start_time, 0);
 				len = ioctl(fd, PCIEDEV_VECTOR_RW, &ioc_VREAD);
@@ -438,34 +444,82 @@ int main(int argc, char* argv[])
                         printf ("#CAN'T PREAD FILE return %i\n", len);
                 }
                 break;
-	    case 10 :
-                printf ("\n INPUT  BARx (0,1,2,3...)  -");
-                scanf ("%x",&tmp_barx);
-                fflush(stdin);
+			case 10 :
+					printf ("\n INPUT  BARx (0,1,2,3...)  -");
+					scanf ("%x",&tmp_barx);
+					fflush(stdin);
+					mmap_offset = (u_long)(tmp_barx<< MMAP_BAR_SHIFT);
 
-                printf ("\n INPUT  MODE  (0-D8,1-D16,2-D32)  -");
-                scanf ("%x",&tmp_mode);
-                fflush(stdin);
+					printf ("\n INPUT SIZE (IN byte)  -");
+					scanf ("%u",&tmp_size);
+					mmap_len = (u_long)tmp_size;
 
-                printf ("\n INPUT  ADDRESS (IN HEX)  -");
-                scanf ("%x",&tmp_offset);
-                fflush(stdin);
-                
-                printf ("\n INPUT SIZE (IN byte)  -");
-                scanf ("%u",&tmp_size);
-                
-                printf ("\n INPUT DATA (IN HEX)  -");
-                scanf ("%x",&tmp_data);
-                fflush(stdin);
+					printf ("BAR - %X , SIZE - %i\n", mmap_offset, mmap_len);
+					
+					mmap_address = mmap(0, mmap_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mmap_offset);
+					
+					printf("MMAP ADDRESS %X\n", mmap_address);
+					
+					if (mmap_address <= 0 ){
+							printf ("#MMAP ERROR %i\n", mmap_address);
+					}
+					
+					tmp_print = 0;
+					printf ("READ(0 NO, 1 YES)  -\n");
+					scanf ("%d",&tmp_print);
+					
+					if(tmp_print){
+						printf ("\n INPUT  MODE  (0-D8,1-D16,2-D32)  -");
+						scanf ("%x",&tmp_mode);
+						fflush(stdin);
+						printf ("\n INPUT NUMBER OF READS   -");
+						scanf ("%u",&tmp_size);
+					
+						tmp_rw_buf     = new u_int[tmp_size];
+						gettimeofday(&start_time, 0);
+						for(k = 0; k < tmp_size; ++k){
+							*((u_int*)tmp_rw_buf + k) = *((u_int*)mmap_address + k);
+						}
+						gettimeofday(&end_time, 0);
+					
+					}
+					
+					printf ("===========READED  CODE %i\n", len);
+					time_tmp    =  MIKRS(end_time) - MIKRS(start_time);
+					time_dlt       =  MILLS(end_time) - MILLS(start_time);
+					printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+					printf("STOP READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
+					
+					tmp_print = 0;
+					printf ("PRINT(0 NO, 1 YES)  -\n");
+					scanf ("%d",&tmp_print);
+					fflush(stdin);
+					while (tmp_print){
+						printf ("START POS  -\n");
+						scanf ("%d",&tmp_print_start);
+						fflush(stdin);
+						printf ("STOP POS  -\n");
+						scanf ("%d",&tmp_print_stop);
+						fflush(stdin);
+						k = tmp_print_start*4;
+						for(int i = tmp_print_start; i < tmp_print_stop; i++){
+							printf ("READED : MODE - %X , OFFSET - %X, DATA - %X\n", 
+										tmp_mode, k,  *((u_int*)tmp_rw_buf + i));
+							k += 4;
+						}
+						printf ("PRINT (0 NO, 1 YES)  -\n");
+						scanf ("%d",&tmp_print);
+						fflush(stdin);
+					}
+					if(tmp_rw_buf) delete tmp_rw_buf;
+					tmp_rw_buf   = 0;
+					
+					if (mmap_address > 0 ){
+						len = munmap(mmap_address, mmap_len);
+					}
+					
+			break;
 
-                printf ("BAR - %X MODE - %X , OFFSET - %X, SIZE - %i\n", tmp_barx, tmp_mode, tmp_offset, tmp_size);
-                len = pwrite(fd, &tmp_data, tmp_size, tmp_offset);
-
-                if (len != tmp_size ){
-                        printf ("#CAN'T PWRITE FILE return %i\n", len);
-                }
-		break;
-        
            
         case 12 :
                   io_RW.cmd = 0;
