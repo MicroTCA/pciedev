@@ -45,6 +45,8 @@ int main(int argc, char* argv[])
 	float                     tmp_fdata;
 	int                   len = 0;
 	int                   k = 0;
+	int                   i = 0;
+	int                   rpt = 0;
 	int                   itemsize = 0;
 	int*              tmp_dma_buf;
 	u_int*              tmp_rw_buf;
@@ -180,21 +182,31 @@ int main(int argc, char* argv[])
 				tmp_rw_buf     = new u_int[tmp_size];
 				printf ("MODE - %u , OFFSET - %X, DATA - %u SIZE %u\n", 
 					l_Read.mode_rw, l_Read.offset_rw,  l_Read.data_rw, l_Read.size_rw);     
+				
+				printf ("\n REPEAT)  -");
+				scanf ("%x",&rpt);
+				fflush(stdin);
+				
 				gettimeofday(&start_time, 0);
-				for(k = 0; k < tmp_size; ++k){
-					l_Read.offset_rw   = tmp_offset = k*4;
-					l_Read.data_rw     = 0;
-					l_Read.mode_rw   = tmp_mode;
-					l_Read.barx_rw    = tmp_barx;
-					l_Read.size_rw     = 1;
-					l_Read.rsrvd_rw   = 0;
-					len = read (fd, &l_Read, 1);
-					*((u_int*)tmp_rw_buf + k*1) = l_Read.data_rw;
+				for(i = 0; i < rpt; i++){
+				
+					for(k = 0; k < tmp_size; ++k){
+						l_Read.offset_rw   = tmp_offset = k*4;
+						l_Read.data_rw     = 0;
+						l_Read.mode_rw   = tmp_mode;
+						l_Read.barx_rw    = tmp_barx;
+						l_Read.size_rw     = 1;
+						l_Read.rsrvd_rw   = 0;
+						len = read (fd, &l_Read, 1);
+						*((u_int*)tmp_rw_buf + k*1) = l_Read.data_rw;
+					}
+				
 				}
 				gettimeofday(&end_time, 0);
+				
 				printf ("===========READED  CODE %i\n", len);
-				time_tmp    =  MIKRS(end_time) - MIKRS(start_time);
-				time_dlt       =  MILLS(end_time) - MILLS(start_time);
+				time_tmp    = (MIKRS(end_time) - MIKRS(start_time))/rpt;
+				time_dlt       =  (MILLS(end_time) - MILLS(start_time))/rpt;
 				printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
 				printf("STOP READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
 				if (len < 0){
@@ -346,8 +358,8 @@ int main(int argc, char* argv[])
 				ctmp_rw_buf                 = new char[sizeof(device_ioc_rw)*vrw_count];
 				ioc_VREAD.device_ioc_rw_ptr = (pointer_type)ctmp_rw_buf;
 				//tmp_vrw_buf[6]     = new u_int[tmp_size];
-				for(int i = 0; i< vrw_count; ++i){
-					vrw_ioc_ACCESS[i].rw_access_mode = 0; /* mode of rw (MTCA_SIMLE_READ,...)      */
+				for(i = 0; i< vrw_count; ++i){
+					vrw_ioc_ACCESS[i].rw_access_mode = 0; /* mode of rw (MTCA_SIMLE_READ,...) */
 					tmp_mode = 0;
 					printf ("\n BAR NUM ? -");
 					scanf ("%i",&tmp_mode);
@@ -368,9 +380,10 @@ int main(int argc, char* argv[])
 					tmp_vrw_buf[i] = 0;
 					tmp_vrw_buf[i] = new u_int[tmp_mode];
 					vrw_ioc_ACCESS[i].dataPtr =(pointer_type)tmp_vrw_buf[i];
-					memcpy((ctmp_rw_buf + i* sizeof (device_ioc_rw)), &vrw_ioc_ACCESS[i], sizeof (device_ioc_rw));
+					memcpy((ctmp_rw_buf + i* sizeof (device_ioc_rw)), &vrw_ioc_ACCESS[i], 
+							                                                                sizeof (device_ioc_rw));
 				}
-				for(int i = 0; i< vrw_count; ++i){
+				for(i = 0; i< vrw_count; ++i){
 					printf ("#####READ NUM %i\n", i);
 					printf ("REG_SIZE %i BAR %i OFFSET %X COUNT %i\n", 
 						*(int*)((char*)ctmp_rw_buf + i* sizeof (device_ioc_rw)),
@@ -379,16 +392,23 @@ int main(int argc, char* argv[])
 						*(int*)((char*)ctmp_rw_buf + i* sizeof (device_ioc_rw) +12)
 							);
 				}
+				printf ("\n REPEAT)  -");
+				scanf ("%x",&rpt);
+				fflush(stdin);
+				
 				gettimeofday(&start_time, 0);
-				len = ioctl(fd, PCIEDEV_VECTOR_RW, &ioc_VREAD);
-				if (len < 0 ){
-					printf ("#CAN'T READ FILE return %i\n", len);
+				for(i = 0; i < rpt; i++){
+					len = ioctl(fd, PCIEDEV_VECTOR_RW, &ioc_VREAD);
+					if (len < 0 ){
+						printf ("#CAN'T READ FILE return %i\n", len);
+					}
 				}
 				gettimeofday(&end_time, 0);
 				printf ("===========READED  CODE %i\n", len);
-				time_tmp    =  MIKRS(end_time) - MIKRS(start_time);
-				time_dlt       =  MILLS(end_time) - MILLS(start_time);
-				printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+				time_tmp    =  (MIKRS(end_time) - MIKRS(start_time))/rpt;
+				time_dlt       =  (MILLS(end_time) - MILLS(start_time))/rpt;
+				printf("STOP READING TIME %fms : %fmks  SIZE %lu\n",
+						             time_dlt, time_tmp,(sizeof(int)*tmp_size));
 				printf("STOP READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
 				
 				tmp_print = 0;
@@ -404,8 +424,9 @@ int main(int argc, char* argv[])
 					fflush(stdin);
 					k = tmp_print_start*4;
 					for(int i = tmp_print_start; i < tmp_print_stop; i++){
-						printf ("VREADED :NUM %i, BAR %i,  MODE - %X , OFFSET - %X, DATA - %X\n", 
-			                            i, vrw_ioc_ACCESS[i].barx_rw, vrw_ioc_ACCESS[i].register_size ,k, *((u_int*)vrw_ioc_ACCESS[i].dataPtr + i));
+						printf ("VREAD :NM %i, BAR %i,  MODE - %X , OFFSET - %X, DATA - %X\n", 
+			                            i, vrw_ioc_ACCESS[i].barx_rw, vrw_ioc_ACCESS[i].register_size ,k,
+								                   *((u_int*)vrw_ioc_ACCESS[i].dataPtr + i));
 						k += 4;
 					}
 					printf ("PRINT (0 NO, 1 YES)  -\n");
@@ -413,7 +434,7 @@ int main(int argc, char* argv[])
 					fflush(stdin);
 				}
 				
-				for(int i = 0; i< vrw_count; ++i){
+				for(i = 0; i< vrw_count; ++i){
 					if(tmp_vrw_buf[i]) delete tmp_vrw_buf[i];
 					tmp_vrw_buf[i] = 0;
 				}
@@ -437,7 +458,8 @@ int main(int argc, char* argv[])
                 printf ("\n INPUT SIZE (IN byte)  -");
                 scanf ("%u",&tmp_size);
 
-                printf ("BAR - %X MODE - %X , OFFSET - %X, SIZE - %i\n", tmp_barx, tmp_mode, tmp_offset, tmp_size);
+                printf ("BAR - %X MODE - %X , OFFSET - %X, SIZE - %i\n", 
+						tmp_barx, tmp_mode, tmp_offset, tmp_size);
                 len = pread(fd, &tmp_data, tmp_size, tmp_offset);
 
                 if (len != tmp_size ){
@@ -450,9 +472,9 @@ int main(int argc, char* argv[])
 					fflush(stdin);
 					mmap_offset = (u_long)(tmp_barx<< MMAP_BAR_SHIFT);
 
-					printf ("\n INPUT SIZE (IN byte)  -");
+					printf ("\n INPUT SIZE (IN Smples)  -");
 					scanf ("%u",&tmp_size);
-					mmap_len = (u_long)tmp_size;
+					mmap_len = (u_long)(tmp_size * sizeof(int));
 
 					printf ("BAR - %X , SIZE - %i\n", mmap_offset, mmap_len);
 					
@@ -476,18 +498,24 @@ int main(int argc, char* argv[])
 						scanf ("%u",&tmp_size);
 					
 						tmp_rw_buf     = new u_int[tmp_size];
+						printf ("\n REPEAT  -");
+						scanf ("%x",&rpt);
+						fflush(stdin);
+						
 						gettimeofday(&start_time, 0);
-						for(k = 0; k < tmp_size; ++k){
-							*((u_int*)tmp_rw_buf + k) = *((u_int*)mmap_address + k);
-						}
+							for(i = 0; i < rpt; i++){
+								for(k = 0; k < tmp_size; ++k){
+									*((u_int*)tmp_rw_buf + k) = *((u_int*)mmap_address + k);
+								}
+							}
 						gettimeofday(&end_time, 0);
-					
 					}
 					
 					printf ("===========READED  CODE %i\n", len);
-					time_tmp    =  MIKRS(end_time) - MIKRS(start_time);
-					time_dlt       =  MILLS(end_time) - MILLS(start_time);
-					printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+					time_tmp    =  (MIKRS(end_time) - MIKRS(start_time))/rpt;
+					time_dlt       =  (MILLS(end_time) - MILLS(start_time))/rpt;
+					printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", 
+							            time_dlt, time_tmp,(sizeof(int)*tmp_size));
 					printf("STOP READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
 					
 					tmp_print = 0;
@@ -625,7 +653,8 @@ int main(int argc, char* argv[])
                 printf ("===========READED  CODE %i\n", code);
                 time_tmp    =  MIKRS(end_time) - MIKRS(start_time);
                 time_dlt       =  MILLS(end_time) - MILLS(start_time);
-                printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+                printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", 
+						time_dlt, time_tmp,(sizeof(int)*tmp_size));
                 printf("STOP READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
                 code = ioctl (fd, PCIEDEV_GET_DMA_TIME, &DMA_TIME);
                 if (code) {
@@ -637,7 +666,8 @@ int main(int argc, char* argv[])
                 printf("STOP DRIVER TIME START %li:%li STOP %li:%li\n",
                                                             DMA_TIME.start_time.tv_sec, DMA_TIME.start_time.tv_usec, 
                                                             DMA_TIME.stop_time.tv_sec, DMA_TIME.stop_time.tv_usec);
-                printf("STOP DRIVER READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+                printf("STOP DRIVER READING TIME %fms : %fmks  SIZE %lu\n", 
+						        time_dlt, time_tmp,(sizeof(int)*tmp_size));
                 printf("STOP DRIVER READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
                 printf ("PRINT (0 NO, 1 YES)  -\n");
                 scanf ("%d",&tmp_print);
@@ -678,8 +708,9 @@ int main(int argc, char* argv[])
                 fflush(stdin);
                 
                 printf ("DMA_OFFSET - %X, DMA_SIZE - %X\n", DMA_RW.dma_offset, DMA_RW.dma_size);
-                printf ("MAX_MEM- %X, DMA_MEM - %X:%X\n", 536870912,  (DMA_RW.dma_offset + DMA_RW.dma_size),
-                                                                                              (DMA_RW.dma_offset + DMA_RW.dma_size*4));
+                printf ("MAX_MEM- %X, DMA_MEM - %X:%X\n", 536870912,  
+						                             (DMA_RW.dma_offset + DMA_RW.dma_size),
+                                                                                   (DMA_RW.dma_offset + DMA_RW.dma_size*4));
                 
                 
                 tmp_dma_buf     = new int[tmp_size + DMA_DATA_OFFSET];
@@ -698,7 +729,8 @@ int main(int argc, char* argv[])
                     printf ("===========READED  CODE %i\n", code);
                     time_tmp    =  MIKRS(end_time) - MIKRS(start_time);
                     time_dlt       =  MILLS(end_time) - MILLS(start_time);
-                    printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+                    printf("STOP READING TIME %fms : %fmks  SIZE %lu\n", 
+							time_dlt, time_tmp,(sizeof(int)*tmp_size));
                     printf("STOP READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
 //                    code = ioctl (fd, PCIEDEV_GET_DMA_TIME, &DMA_TIME);
 //                    if (code) {
@@ -710,7 +742,8 @@ int main(int argc, char* argv[])
 //                    printf("STOP DRIVER TIME START %li:%li STOP %li:%li\n",
 //                                                                DMA_TIME.start_time.tv_sec, DMA_TIME.start_time.tv_usec, 
 //                                                                DMA_TIME.stop_time.tv_sec, DMA_TIME.stop_time.tv_usec);
-//                    printf("STOP DRIVER READING TIME %fms : %fmks  SIZE %lu\n", time_dlt, time_tmp,(sizeof(int)*tmp_size));
+//                    printf("STOP DRIVER READING TIME %fms : %fmks  SIZE %lu\n", 
+//					                     time_dlt, time_tmp,(sizeof(int)*tmp_size));
 //                    printf("STOP DRIVER READING KBytes/Sec %f\n",((sizeof(int)*tmp_size*1000)/time_tmp));
                 
                     usleep(loop_delay);
