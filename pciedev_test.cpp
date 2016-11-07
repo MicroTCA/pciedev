@@ -47,6 +47,7 @@ int main(int argc, char* argv[])
 	int                   k = 0;
 	int                   i = 0;
 	int                   rpt = 0;
+	int                   openclose = 0;
 	int                   itemsize = 0;
 	int*              tmp_dma_buf;
 	u_int*              tmp_rw_buf;
@@ -183,14 +184,31 @@ int main(int argc, char* argv[])
 				printf ("MODE - %u , OFFSET - %X, DATA - %u SIZE %u\n", 
 					l_Read.mode_rw, l_Read.offset_rw,  l_Read.data_rw, l_Read.size_rw);     
 				
-				printf ("\n REPEAT)  -");
+				printf ("\n REPEAT  -");
 				scanf ("%x",&rpt);
 				fflush(stdin);
 				
+				printf ("\n OPEN/CLOSE (0 -no)  -");
+				scanf ("%x",&openclose);
+				fflush(stdin);
+				
+				
+				if(	openclose) close(fd);
+								
 				gettimeofday(&start_time, 0);
+				
+				
+				if(	openclose) fd = open (nod_name, O_RDWR);
+				
 				for(i = 0; i < rpt; i++){
+					
+				//if(	openclose) fd = open (nod_name, O_RDWR);
 				
 					for(k = 0; k < tmp_size; ++k){
+						
+						//if(	openclose) fd = open (nod_name, O_RDWR);
+						
+						
 						l_Read.offset_rw   = tmp_offset = k*4;
 						l_Read.data_rw     = 0;
 						l_Read.mode_rw   = tmp_mode;
@@ -199,10 +217,22 @@ int main(int argc, char* argv[])
 						l_Read.rsrvd_rw   = 0;
 						len = read (fd, &l_Read, 1);
 						*((u_int*)tmp_rw_buf + k*1) = l_Read.data_rw;
+						
+						
+						//if(	openclose) close(fd);
+						
 					}
+					
+					//if(	openclose) close(fd);
 				
 				}
+				
+				if(	openclose) close(fd);
+				
+				
 				gettimeofday(&end_time, 0);
+				
+				if(	openclose) fd = open (nod_name, O_RDWR);
 				
 				printf ("===========READED  CODE %i\n", len);
 				time_tmp    = (MIKRS(end_time) - MIKRS(start_time))/rpt;
