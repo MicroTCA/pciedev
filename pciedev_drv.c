@@ -13,8 +13,6 @@ MODULE_VERSION("5.0.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 pciedev_cdev     *pciedev_cdev_m = 0;
-module_dev       *module_dev_p[PCIEDEV_NR_DEVS];
-module_dev       *module_dev_pp;
 
 static int        pciedev_open( struct inode *inode, struct file *filp );
 static int        pciedev_release(struct inode *inode, struct file *filp);
@@ -41,17 +39,11 @@ MODULE_DEVICE_TABLE(pci, pciedev_ids);
 /*
  * The top-half interrupt handler.
  */
-#if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
-static irqreturn_t pciedev_interrupt(int irq, void *dev_id, struct pt_regs *regs)
-#else
-static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
-#endif
+static irqreturn_t pciedev_interrupt(int irq, void *dev_id UPKCOMPAT_IHARGPOS(regs) )
 {
-    uint32_t intreg = 0;
-    
     struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
     struct module_dev *dev     = (module_dev *)(pdev->dev_str);
-    
+
     //printk(KERN_ALERT "PCIEDEV_INTERRUPT:   DMA IRQ\n");
     dev->waitFlag = 1;
     //wake_up_interruptible(&(dev->waitDMA));
@@ -59,72 +51,64 @@ static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
     return IRQ_HANDLED;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-    static int pciedev_probe(struct pci_dev *dev, const struct pci_device_id *id)
-#else 
-    static int __devinit pciedev_probe(struct pci_dev *dev, const struct pci_device_id *id)
-#endif
-{  
+static int UPKCOMPAT_INIT pciedev_probe(struct pci_dev *dev, const struct pci_device_id *id)
+{
     int result               = 0;
-    int tmp_brd_num = -1;
+    module_dev  *module_dev_pp;
+    pciedev_dev *module_pciedev;
     
     printk(KERN_ALERT "PCIEDEV_PROBE CALLED \n");
-    result = pciedev_probe_exp(dev, id, &pciedev_fops, pciedev_cdev_m, DEVNAME, &tmp_brd_num);
-    printk(KERN_ALERT "PCIEDEV_PROBE_EXP CALLED  FOR BOARD %i\n", tmp_brd_num);
+    result = pciedev_probe2_exp(dev, id, &pciedev_fops, pciedev_cdev_m,  &module_pciedev );
+    printk(KERN_ALERT "PCIEDEV_PROBE_EXP CALLED\n");
     /*if board has created we will create our structure and pass it to pcedev_dev*/
-    if(!result){
-        printk(KERN_ALERT "PCIEDEV_PROBE_EXP CREATING CURRENT STRUCTURE FOR BOARD %i\n", tmp_brd_num);
+    if(!result) {
+        printk(KERN_ALERT "PCIEDEV_PROBE_EXP CREATING CURRENT STRUCTURE FOR BOARD %i\n", 
+            module_pciedev->brd_num );
         module_dev_pp = kzalloc(sizeof(module_dev), GFP_KERNEL);
         if(!module_dev_pp){
                 return -ENOMEM;
         }
         printk(KERN_ALERT "PCIEDEV_PROBE CALLED; CURRENT STRUCTURE CREATED \n");
-        module_dev_p[tmp_brd_num] = module_dev_pp;
-        module_dev_pp->brd_num      = tmp_brd_num;
-        module_dev_pp->parent_dev  = pciedev_cdev_m->pciedev_dev_m[tmp_brd_num];
+        module_dev_pp->parent_dev  = module_pciedev;
         init_waitqueue_head(&module_dev_pp->waitDMA);
-        pciedev_set_drvdata(pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], module_dev_p[tmp_brd_num]);
-        pciedev_setup_interrupt(pciedev_interrupt, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME); 
+        pciedev_set_drvdata(module_pciedev, module_dev_pp);
+        pciedev_setup_interrupt_exp(pciedev_interrupt, module_pciedev); 
     }
     return result;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-    static void pciedev_remove(struct pci_dev *dev)
-#else 
-   static void __devexit pciedev_remove(struct pci_dev *dev)
-#endif
+static void UPKCOMPAT_EXIT pciedev_remove(struct pci_dev *dev)
 {
-     int result               = 0;
-     int tmp_slot_num = -1;
-     int tmp_brd_num = -1;
-     printk(KERN_ALERT "REMOVE CALLED\n");
-     tmp_brd_num =pciedev_get_brdnum(dev);
-     printk(KERN_ALERT "REMOVE CALLED FOR BOARD %i\n", tmp_brd_num);
-     /* clean up any allocated resources and stuff here */
-     kfree(module_dev_p[tmp_brd_num]);
-     /*now we can call pciedev_remove_exp to clean all standard allocated resources
-      will clean all interrupts if it seted 
-      */
-     result = pciedev_remove_exp(dev,  pciedev_cdev_m, DEVNAME, &tmp_slot_num);
-     printk(KERN_ALERT "PCIEDEV_REMOVE_EXP CALLED  FOR SLOT %i\n", tmp_slot_num);
+    int result = 0;
+    struct pciedev_dev *module_pciedev;     
+
+    printk(KERN_ALERT "REMOVE CALLED\n");
+    module_pciedev = pciedev_get_pciedata(dev);
+    if( module_pciedev != NULL ) {
+        module_dev  *module_dev_pp;
+        int          slot_num = -1;
+        int          brd_num = -1;
+
+        slot_num      = module_pciedev->slot_num;
+        brd_num       = module_pciedev->brd_num;
+        module_dev_pp = pciedev_get_drvdata(module_pciedev);
+
+        result = pciedev_remove2_exp(module_pciedev);
+        printk(KERN_ALERT "PCIEDEV_REMOVE_EXP brd %i slot %i result=%d\n", 
+            brd_num, slot_num, result);
+
+        kfree(module_dev_pp);
+    } else {
+        printk(KERN_ALERT "REMOVE FAILED TO LOCATE MODULE\n");
+    }
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
-    static struct pci_driver pci_pciedev_driver = {
+static struct pci_driver pci_pciedev_driver = {
     .name       = DEVNAME,
     .id_table   = pciedev_ids,
     .probe      = pciedev_probe,
-    .remove    = pciedev_remove,
+    .remove     = UPKCOMPAT_EXIT_P(pciedev_remove),
 };
-#else 
-   static struct pci_driver pci_pciedev_driver = {
-    .name       = DEVNAME,
-    .id_table   = pciedev_ids,
-    .probe      = pciedev_probe,
-    .remove     = __devexit_p(pciedev_remove),
-};
-#endif
 
 
 static int pciedev_open( struct inode *inode, struct file *filp )
