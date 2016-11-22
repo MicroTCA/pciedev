@@ -197,7 +197,8 @@ long     pciedev_ioctl_dma(struct file *filp, unsigned int *cmd_p, unsigned long
                     dma_trans_cnt, dma_trans_rest, tmp_dma_size);
 */
             
-            value    = HZ/1; /* value is given in jiffies*/
+            //value    = HZ/1; /* value is given in jiffies*/
+	   value  = 10000*HZ/150000; /* value is given in jiffies*/
             tmp_order = get_order(tmp_dma_trns_size);
             module_dev_pp->dma_order = tmp_order;
             pWriteBuf = (void *)__get_free_pages(GFP_KERNEL | __GFP_DMA, tmp_order);

@@ -173,6 +173,7 @@ static long  pciedev_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 {
     long result = 0;
     
+/*
     if (_IOC_TYPE(cmd) == PCIEDOOCS_IOC){
         if (_IOC_NR(cmd) <= PCIEDOOCS_IOC_MAXNR && _IOC_NR(cmd) >= PCIEDOOCS_IOC_MINNR) {
             result = pciedev_ioctl_exp(filp, &cmd, &arg, pciedev_cdev_m);
@@ -182,6 +183,25 @@ static long  pciedev_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
     }else{
         return -ENOTTY;
     }
+*/
+	
+	
+    
+    if (_IOC_TYPE(cmd) == PCIEDOOCS_IOC){
+        if (_IOC_NR(cmd) <= PCIEDOOCS_IOC_MAXNR && _IOC_NR(cmd) >= PCIEDOOCS_IOC_MINNR) {
+			if (_IOC_NR(cmd) <= PCIEDOOCS_IOC_DMA_MAXNR && _IOC_NR(cmd) >= PCIEDOOCS_IOC_DMA_MINNR) {
+				result = pciedev_ioctl_dma(filp, &cmd, &arg, pciedev_cdev_m);
+			}else{
+				result = pciedev_ioctl_exp(filp, &cmd, &arg, pciedev_cdev_m);
+			}
+	}else{
+		return -ENOTTY;
+	}
+    }else{
+        return -ENOTTY;
+    }
+	
+	
     return result;
 }
 

@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
 	int                   len = 0;
 	int                   k = 0;
 	int                   i = 0;
+	int                   ii = 0;
 	int                   rpt = 0;
 	int                   openclose = 0;
 	int                   itemsize = 0;
@@ -187,6 +188,7 @@ int main(int argc, char* argv[])
 				printf ("\n REPEAT  -");
 				scanf ("%x",&rpt);
 				fflush(stdin);
+				if(!rpt) rpt = 1;
 				
 				printf ("\n OPEN/CLOSE (0 -no)  -");
 				scanf ("%x",&openclose);
@@ -425,6 +427,7 @@ int main(int argc, char* argv[])
 				printf ("\n REPEAT)  -");
 				scanf ("%x",&rpt);
 				fflush(stdin);
+				if(!rpt) rpt = 1;
 				
 				gettimeofday(&start_time, 0);
 				for(i = 0; i < rpt; i++){
@@ -452,12 +455,15 @@ int main(int argc, char* argv[])
 					printf ("STOP POS  -\n");
 					scanf ("%d",&tmp_print_stop);
 					fflush(stdin);
-					k = tmp_print_start*4;
-					for(int i = tmp_print_start; i < tmp_print_stop; i++){
-						printf ("VREAD :NM %i, BAR %i,  MODE - %X , OFFSET - %X, DATA - %X\n", 
-			                            i, vrw_ioc_ACCESS[i].barx_rw, vrw_ioc_ACCESS[i].register_size ,k,
-								                   *((u_int*)vrw_ioc_ACCESS[i].dataPtr + i));
-						k += 4;
+					for(ii = 0; ii< vrw_count; ++ii){
+						printf ("#####READ NUM %i\n", ii);
+						k = tmp_print_start*4;
+						for(int i = tmp_print_start; i < tmp_print_stop; i++){
+							printf ("VREAD :NM %i, BAR %i,  MODE - %X , OFFSET - %X,  ", 
+											i, vrw_ioc_ACCESS[ii].barx_rw, vrw_ioc_ACCESS[ii].register_size ,k);
+							printf (" DATA - %X\n", *((u_int*)vrw_ioc_ACCESS[ii].dataPtr + i));
+							k += 4;
+						}
 					}
 					printf ("PRINT (0 NO, 1 YES)  -\n");
 					scanf ("%d",&tmp_print);
@@ -531,6 +537,7 @@ int main(int argc, char* argv[])
 						printf ("\n REPEAT  -");
 						scanf ("%x",&rpt);
 						fflush(stdin);
+						if(!rpt) rpt = 1;
 						
 						gettimeofday(&start_time, 0);
 							for(i = 0; i < rpt; i++){
@@ -560,7 +567,7 @@ int main(int argc, char* argv[])
 						scanf ("%d",&tmp_print_stop);
 						fflush(stdin);
 						k = tmp_print_start*4;
-						for(int i = tmp_print_start; i < tmp_print_stop; i++){
+						for(i = tmp_print_start; i < tmp_print_stop; i++){
 							printf ("READED : MODE - %X , OFFSET - %X, DATA - %X\n", 
 										tmp_mode, k,  *((u_int*)tmp_rw_buf + i));
 							k += 4;
