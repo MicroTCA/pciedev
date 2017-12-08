@@ -69,6 +69,9 @@ int main(int argc, char* argv[])
 	device_ioc_rw            vrw_ioc_ACCESS[6];
 	int                             vrw_count;
 	
+	picmg_shapi_device_info      shapi_dev_info;
+	picmg_shapi_module_info    shapi_module_info;
+	
 	//mmap
 	void               *mmap_address ;
 	unsigned long mmap_offset    = 0; 
@@ -117,6 +120,7 @@ int main(int argc, char* argv[])
 		printf("\n PREAD (26) or PWRITE (27) LLSEEK (28) ?-");
 		printf("\n GET_DMA_TIME (29) ?-");
 		printf("\n CTRL_DMA READ (30) CTRL_DMA WRITE (31) CTRL_DMA LOOP_READ (32)?-");
+		printf("\n GET_SHAPI_DEVICE_INFO (40) or GET_SHAPI_MODULE_INFO (41) ?-");
 		printf("\n END (11) ?-");
 		scanf("%d",&ch_in);
 		fflush(stdin);
@@ -807,6 +811,54 @@ int main(int argc, char* argv[])
                 }
                 if(tmp_dma_buf) delete tmp_dma_buf;
                 break;
+				
+				
+	case 40 ://picmg_shapi_device_info      shapi_dev_info;
+		ioctl(fd, PCIEDEV_GET_SHAPI_DEVINFO, &shapi_dev_info);
+		printf ("SHAPI_VERSION - %X\n",shapi_dev_info.SHAPI_VERSION);
+		printf ("SHAPI_FIRST_MODULE_ADDRESS - %X\n",shapi_dev_info.SHAPI_FIRST_MODULE_ADDRESS);
+		printf ("SHAPI_HW_IDS - %X\n" ,shapi_dev_info.SHAPI_HW_IDS); 
+		printf ("SHAPI_FW_IDS   - %X\n",shapi_dev_info.SHAPI_FW_IDS);
+		printf ("SHAPI_FW_VERSION  - %X\n" ,shapi_dev_info.SHAPI_FW_VERSION);
+		printf ("SHAPI_FW_TIMESTAMP  - %X\n" ,shapi_dev_info.SHAPI_FW_TIMESTAMP);
+		printf ("SHAPI_FW_NAME[0] - %X\n",shapi_dev_info.SHAPI_FW_NAME[0]);
+		printf ("SHAPI_FW_NAME[1] - %X\n",shapi_dev_info.SHAPI_FW_NAME[1]);
+		printf ("SHAPI_FW_NAME[2] - %X\n",shapi_dev_info.SHAPI_FW_NAME[2]);
+		printf ("SHAPI_DEVICE_CAP - %X\n",shapi_dev_info.SHAPI_DEVICE_CAP);
+		printf ("SHAPI_DEVICE_STATUS - %X\n" ,shapi_dev_info.SHAPI_DEVICE_STATUS); 
+		printf ("SHAPI_DEVICE_CONTROL   - %X\n",shapi_dev_info.SHAPI_DEVICE_CONTROL);
+		printf ("SHAPI_IRQ_MASK  - %X\n" ,shapi_dev_info.SHAPI_IRQ_MASK);
+		printf ("SHAPI_IRQ_FLAG  - %X\n" ,shapi_dev_info.SHAPI_IRQ_FLAG);
+		printf ("SHAPI_IRQ_ACTIVE - %X\n",shapi_dev_info.SHAPI_IRQ_ACTIVE);
+		printf ("SHAPI_SCRATCH_REGISTER - %X\n",shapi_dev_info.SHAPI_SCRATCH_REGISTER);
+		printf ("fw_name - %s\n",shapi_dev_info.fw_name);
+		printf ("number_of_modules - %i\n",shapi_dev_info.number_of_modules);
+		break;			
+	case 41 ://picmg_shapi_module_info    shapi_module_info;
+		tmp_mode = 0;
+		printf ("\n ENTER MODULE NUMBER ? -");
+		scanf ("%u",&tmp_mode);
+		fflush(stdin);
+		shapi_module_info.module_num = tmp_mode;
+		ioctl(fd, PCIEDEV_GET_SHAPI_MODINFO, &shapi_module_info);
+		printf ("SHAPI_VERSION - %X\n",shapi_module_info.SHAPI_VERSION);
+		printf ("SHAPI_NEXT_MODULE_ADDRESS - %X\n",shapi_module_info.SHAPI_NEXT_MODULE_ADDRESS);
+		printf ("SHAPI_MODULE_FW_IDS - %X\n" ,shapi_module_info.SHAPI_MODULE_FW_IDS); 
+		printf ("SHAPI_MODULE_VERSION   - %X\n",shapi_module_info.SHAPI_MODULE_VERSION);
+		printf ("SHAPI_MODULE_NAME[0] - %X\n",shapi_module_info.SHAPI_MODULE_NAME[0]);
+		printf ("SHAPI_MODULE_NAME[1] - %X\n",shapi_module_info.SHAPI_MODULE_NAME[1]);
+		printf ("SHAPI_MODULE_CAP - %X\n",shapi_module_info.SHAPI_MODULE_CAP);
+		printf ("SHAPI_MODULE_STATUS - %X\n" ,shapi_module_info.SHAPI_MODULE_STATUS); 
+		printf ("SHAPI_MODULE_CONTROL   - %X\n",shapi_module_info.SHAPI_MODULE_CONTROL);
+		printf ("SHAPI_IRQ_ID  - %X\n" ,shapi_module_info.SHAPI_IRQ_ID);
+		printf ("SHAPI_IRQ_FLAG_CLEAR  - %X\n" ,shapi_module_info.SHAPI_IRQ_FLAG_CLEAR);
+		printf ("SHAPI_IRQ_MASK - %X\n",shapi_module_info.SHAPI_IRQ_MASK);
+		printf ("SHAPI_IRQ_FLAG  - %X\n" ,shapi_module_info.SHAPI_IRQ_FLAG);
+		printf ("SHAPI_IRQ_ACTIVE - %X\n",shapi_module_info.SHAPI_IRQ_ACTIVE);
+		printf ("module_name - %s\n",shapi_module_info.module_name);
+		printf ("module_num - %i\n",shapi_module_info.module_num);
+		break;
+	
 	   default:
 		break;
 	}

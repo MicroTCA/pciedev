@@ -17,6 +17,8 @@ pciedev_cdev     *pciedev_cdev_m = 0;
 module_dev       *module_dev_p[PCIEDEV_NR_DEVS];
 module_dev       *module_dev_pp;
 
+extern struct upciedev_base_dev *p_base_upciedev_dev;
+
 static int        pciedev_open( struct inode *inode, struct file *filp );
 static int        pciedev_release(struct inode *inode, struct file *filp);
 static ssize_t pciedev_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
@@ -55,12 +57,65 @@ static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
     struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
     struct module_dev *dev     = (module_dev *)(pdev->dev_str);
     
-    //printk(KERN_ALERT "PCIEDEV_INTERRUPT:   DMA IRQ\n");
+    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   DMA IRQ\n");
     dev->waitFlag = 1;
     //wake_up_interruptible(&(dev->waitDMA));
     wake_up(&(dev->waitDMA));
     return IRQ_HANDLED;
 }
+
+/*
+ * The top-half interrupt handler. for MSI Buno code testing
+ */
+#if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
+static irqreturn_t pciedev_interrupt2(int irq, void *dev_id, struct pt_regs *regs)
+#else
+static irqreturn_t pciedev_interrupt2(int irq, void *dev_id)
+#endif
+{
+    uint32_t intreg = 0;
+    
+    struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
+    struct module_dev *dev     = (module_dev *)(pdev->dev_str);
+    
+    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI  IRQ 2\n");
+    return IRQ_HANDLED;
+}
+
+#if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
+static irqreturn_t pciedev_interrupt3(int irq, void *dev_id, struct pt_regs *regs)
+#else
+static irqreturn_t pciedev_interrupt3(int irq, void *dev_id)
+#endif
+{
+    uint32_t intreg = 0;
+    
+    struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
+    struct module_dev *dev     = (module_dev *)(pdev->dev_str);
+    
+    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI IRQ 3\n");
+    return IRQ_HANDLED;
+}
+
+#if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
+static irqreturn_t pciedev_interrupt7(int irq, void *dev_id, struct pt_regs *regs)
+#else
+static irqreturn_t pciedev_interrupt7(int irq, void *dev_id)
+#endif
+{
+    uint32_t intreg = 0;
+    
+    struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
+    struct module_dev *dev     = (module_dev *)(pdev->dev_str);
+    
+    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI IRQ 7\n");
+    return IRQ_HANDLED;
+}
+
+//end MSI 
+
+
+
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
     static int pciedev_probe(struct pci_dev *dev, const struct pci_device_id *id)
@@ -69,7 +124,10 @@ static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
 #endif
 {  
     int result               = 0;
-    int tmp_brd_num = -1;
+    int tmp_brd_num   = -1;
+    int is_shapi            = 0;
+    int i                       = 0;
+    int devise_irqs_enabled                       = 0;
     
     printk(KERN_ALERT "PCIEDEV_PROBE CALLED \n");
     result = pciedev_probe_exp(dev, id, &pciedev_fops, pciedev_cdev_m, DEVNAME, &tmp_brd_num);
@@ -87,7 +145,32 @@ static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
         module_dev_pp->parent_dev  = pciedev_cdev_m->pciedev_dev_m[tmp_brd_num];
         init_waitqueue_head(&module_dev_pp->waitDMA);
         pciedev_set_drvdata(pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], module_dev_p[tmp_brd_num]);
-        pciedev_setup_interrupt(pciedev_interrupt, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME); 
+        devise_irqs_enabled                       =  pciedev_cdev_m->pciedev_dev_m[tmp_brd_num]->device_irq_num;
+        printk(KERN_ALERT "PCIEDEV_PROBE CALLED; DEVICE IRQs %X \n", devise_irqs_enabled);
+        
+        is_shapi            = pciedev_cdev_m->pciedev_dev_m[tmp_brd_num]->shapi_brd;
+        printk(KERN_ALERT "PCIEDEV_PROBE CALLED; SETTINGIRQs  IS_SHAPI %X \n", is_shapi);
+        if(is_shapi){
+			for(i =0 ; i < 32; ++i){
+				if((devise_irqs_enabled >> i) & 0x1){
+					printk(KERN_ALERT "PCIEDEV_PROBE CALLED; SETTINGIRQs  MSI_IRQ_NUM %i \n", i);
+					if(i == 0){
+						pciedev_setup_interrupt(pciedev_interrupt, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME, 0); 
+					}
+					if(i == 2){
+						pciedev_setup_interrupt(pciedev_interrupt2, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME, 2); 
+					}
+					if(i == 3){
+						pciedev_setup_interrupt(pciedev_interrupt3, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME, 3); 
+					}
+					if(i == 7){
+						pciedev_setup_interrupt(pciedev_interrupt7, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME, 7); 
+					}
+				}
+			}	
+		}else{
+			pciedev_setup_interrupt(pciedev_interrupt, pciedev_cdev_m->pciedev_dev_m[tmp_brd_num], DEVNAME, 0); 
+	   }
     }
     return result;
 }
@@ -219,6 +302,8 @@ static int __init pciedev_init_module(void)
     
     printk(KERN_ALERT "INIT: CALLING UPCIEDEV INIT \n");
     result = upciedev_init_module_exp(&pciedev_cdev_m, &pciedev_fops, DEVNAME);
+    //result = upciedev_init_module_exp(&pciedev_cdev_m, &pciedev_fops, DEVNAME, p_base_upciedev_dev);
+	
     printk(KERN_ALERT "AFTER_INIT:REGISTERING PCI DRIVER\n");
     result = pci_register_driver(&pci_pciedev_driver);
     printk(KERN_ALERT "AFTER_INIT:REGISTERING PCI DRIVER RESUALT %d\n", result);
