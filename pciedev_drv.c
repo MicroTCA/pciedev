@@ -34,7 +34,7 @@
 
 MODULE_AUTHOR("Ludwig Petrosyan");
 MODULE_DESCRIPTION("DESY AMC-PCIE board driver");
-MODULE_VERSION("6.0.0");
+MODULE_VERSION("6.1.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 pciedev_cdev     *pciedev_cdev_m = 0;
@@ -81,7 +81,7 @@ static irqreturn_t pciedev_interrupt(int irq, void *dev_id)
     struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
     struct module_dev *dev     = (module_dev *)(pdev->dev_str);
     
-    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   DMA IRQ\n");
+    //printk(KERN_ALERT "PCIEDEV_INTERRUPT:   DMA IRQ\n");
     dev->waitFlag = 1;
     //wake_up_interruptible(&(dev->waitDMA));
     wake_up(&(dev->waitDMA));
@@ -102,7 +102,7 @@ static irqreturn_t pciedev_interrupt2(int irq, void *dev_id)
     struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
     struct module_dev *dev     = (module_dev *)(pdev->dev_str);
     
-    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI  IRQ 2\n");
+    //printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI  IRQ 2\n");
     return IRQ_HANDLED;
 }
 
@@ -117,7 +117,7 @@ static irqreturn_t pciedev_interrupt3(int irq, void *dev_id)
     struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
     struct module_dev *dev     = (module_dev *)(pdev->dev_str);
     
-    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI IRQ 3\n");
+    //printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI IRQ 3\n");
     return IRQ_HANDLED;
 }
 
@@ -132,7 +132,7 @@ static irqreturn_t pciedev_interrupt7(int irq, void *dev_id)
     struct pciedev_dev *pdev   = (pciedev_dev*)dev_id;
     struct module_dev *dev     = (module_dev *)(pdev->dev_str);
     
-    printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI IRQ 7\n");
+    //printk(KERN_ALERT "PCIEDEV_INTERRUPT:   MSI IRQ 7\n");
     return IRQ_HANDLED;
 }
 
