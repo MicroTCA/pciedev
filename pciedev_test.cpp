@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
 						//if(	openclose) fd = open (nod_name, O_RDWR);
 						
 						
-						l_Read.offset_rw   = tmp_offset = k*4;
+						l_Read.offset_rw   = tmp_offset + k*4;
 						l_Read.data_rw     = 0;
 						l_Read.mode_rw   = tmp_mode;
 						l_Read.barx_rw    = tmp_barx;

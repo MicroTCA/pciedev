@@ -34,7 +34,7 @@
 
 MODULE_AUTHOR("Ludwig Petrosyan");
 MODULE_DESCRIPTION("DESY AMC-PCIE board driver");
-MODULE_VERSION("6.1.0");
+MODULE_VERSION("6.2.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 pciedev_cdev     *pciedev_cdev_m = 0;
