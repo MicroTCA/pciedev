@@ -22,6 +22,10 @@
 *	Author: Ludwig Petrosyan (Email: ludwig.petrosyan@desy.de)
 */
 
+//#include <cstdint>
+//#include <cstdlib>
+//#include <cstdint.h>
+//#include <stdint.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
@@ -37,9 +41,11 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include <iostream>
 #include <fstream>
+
 
 #include "pciedev_io.h"
 
@@ -100,6 +106,7 @@ int main(int argc, char* argv[])
 	void               *mmap_address ;
 	unsigned long mmap_offset    = 0; 
 	unsigned long mmap_len        = 0;
+	unsigned long mmap_len_bar       = 0;
 
 	itemsize = sizeof(device_rw);
 	printf("ITEMSIZE %i \n",itemsize);
@@ -539,15 +546,36 @@ int main(int argc, char* argv[])
 					printf ("\n INPUT SIZE (IN Smples)  -");
 					scanf ("%u",&tmp_size);
 					mmap_len = (u_long)(tmp_size * sizeof(int));
+					mmap_len_bar = sysconf (_SC_PAGESIZE);
+							
 
-					printf ("BAR - %X , SIZE - %i\n", mmap_offset, mmap_len);
+					printf ("BAR - %X , SIZE - %i PAGE_SIZE -%i\n", mmap_offset, mmap_len, mmap_len_bar);
 					
-					mmap_address = mmap(0, mmap_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mmap_offset);
+					mmap_address = mmap(0, mmap_len_bar, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mmap_offset);
 					
 					printf("MMAP ADDRESS %X\n", mmap_address);
 					
 					if (mmap_address <= 0 ){
 							printf ("#MMAP ERROR %i\n", mmap_address);
+					}
+					
+					
+					tmp_print = 0;
+					printf ("WRITE 32bit(0 NO, 1 YES)  -\n");
+					scanf ("%d",&tmp_print);
+					if(tmp_print){
+						tmp_rw_buf     = new u_int[tmp_size];
+						printf ("\n INPUT  FIRST DATA IN HEX  -");
+						scanf ("%x",&tmp_data);
+						fflush(stdin);
+						for(i = 0; i < tmp_size; i++){
+							*((u_int*)tmp_rw_buf + i) = tmp_data + i;
+						}
+						gettimeofday(&start_time, 0);
+							 memcpy ( mmap_address, tmp_rw_buf, sizeof(int)*tmp_size );
+						gettimeofday(&end_time, 0);
+						if(tmp_rw_buf) delete tmp_rw_buf;
+						tmp_rw_buf   = 0;
 					}
 					
 					tmp_print = 0;
@@ -608,7 +636,7 @@ int main(int argc, char* argv[])
 					tmp_rw_buf   = 0;
 					
 					if (mmap_address > 0 ){
-						len = munmap(mmap_address, mmap_len);
+						len = munmap(mmap_address, mmap_len_bar);
 					}
 					
 			break;

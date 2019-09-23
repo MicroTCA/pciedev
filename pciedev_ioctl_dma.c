@@ -181,6 +181,7 @@ long     pciedev_ioctl_dma(struct file *filp, unsigned int *cmd_p, unsigned long
             tmp_free_pages = nr_free_pages();
             tmp_free_pages = tmp_free_pages << (PAGE_SHIFT-10);
             tmp_free_pages = tmp_free_pages/2;
+            tmp_free_pages = tmp_free_pages * 1000;
             
             tmp_dma_buf_size    = tmp_dma_size;
             if((tmp_dma_buf_size%PCIEDEV_DMA_SYZE)){
