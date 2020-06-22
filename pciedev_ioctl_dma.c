@@ -101,11 +101,19 @@ long     pciedev_ioctl_dma(struct file *filp, unsigned int *cmd_p, unsigned long
      * access_ok is kernel-oriented, so the concept of "read" and
      * "write" is reversed
      */
-     if (_IOC_DIR(cmd) & _IOC_READ)
-             err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
-     else if (_IOC_DIR(cmd) & _IOC_WRITE)
-             err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
-     if (err) return -EFAULT;
+	#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,20,17)
+	 if (_IOC_DIR(cmd) & _IOC_READ)
+			 err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	 else if (_IOC_DIR(cmd) & _IOC_WRITE)
+			 err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	 if (err) return -EFAULT;
+	 #else
+	if (_IOC_DIR(cmd))
+	{
+		err = !access_ok((void __user *)arg, _IOC_SIZE(cmd));
+		if (err) return -EFAULT;
+	}
+	#endif
 
 /*
     if (mutex_lock_interruptible(&dev->dev_mut))
