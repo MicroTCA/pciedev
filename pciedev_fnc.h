@@ -25,6 +25,7 @@
 #ifndef _PCIEDEV_FNC_H_
 #define _PCIEDEV_FNC_H_
 
+#include <linux/version.h>
 #include "pciedev_io.h"
 #include "pciedev_ufn.h"
 

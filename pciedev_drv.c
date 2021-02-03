@@ -21,7 +21,7 @@
 /*
 *	Author: Ludwig Petrosyan (Email: ludwig.petrosyan@desy.de)
 */
-
+#include <linux/version.h>
 #include <linux/module.h>
 #include <linux/fs.h>	
 #include <linux/interrupt.h>
@@ -34,7 +34,7 @@
 
 MODULE_AUTHOR("Ludwig Petrosyan");
 MODULE_DESCRIPTION("DESY AMC-PCIE board driver");
-MODULE_VERSION("6.2.0");
+MODULE_VERSION("7.0.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 pciedev_cdev     *pciedev_cdev_m = 0;
